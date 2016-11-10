@@ -1,0 +1,64 @@
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.GpioPinDigitalOutput;
+import com.pi4j.io.gpio.PinState;
+import com.pi4j.io.gpio.RaspiPin;
+import java.io.IOException;
+
+import java.net.*;
+import java.io.*;
+public class EchoServer {
+ public static void main(String[] args) throws IOException,InterruptedException
+   {
+    ServerSocket serverSocket = null;
+    try {
+         serverSocket = new ServerSocket(10007);
+        }
+    catch (IOException e)
+        {
+         System.err.println("Could not listen on port: 10007.");
+         System.exit(1);
+        }
+    Socket clientSocket = null; System.out.println ("Waiting for connection.....");
+    try {
+         clientSocket = serverSocket.accept();
+        }
+    catch (IOException e)
+        {
+         System.err.println("Accept failed.");
+         System.exit(1);
+        }
+    System.out.println ("Connection successful");
+
+        final GpioController gpio = GpioFactory.getInstance();
+
+
+        final GpioPinDigitalOutput pin = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_05, "MyLED", PinState.HIGH);
+
+
+        pin.setShutdownOptions(true, PinState.LOW);
+
+   //     System.out.println("--> GPIO state should be: ON");
+   //     Thread.sleep(5000);
+
+    System.out.println ("Waiting for input.....");
+    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(),
+                                      true);
+    BufferedReader in = new BufferedReader(
+            new InputStreamReader( clientSocket.getInputStream()));
+    String inputLine;
+    while ((inputLine = in.readLine()) != null)
+        {
+         if( inputLine != null) {
+         System.out.println ("Message From Client: " + inputLine);
+         out.println(inputLine); }
+         if (inputLine.equals("Exit."))
+             break;
+        }
+    out.close();
+    in.close();
+    clientSocket.close();
+    pin.low();
+    serverSocket.close();
+   }
+   }
